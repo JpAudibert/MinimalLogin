@@ -24,10 +24,12 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors();
 
 bool authenticated = false;
 
-app.MapPost("/login", async (UsersContext usersContext, LoginInputModel loginInputModel) => {
+app.MapPost("/login", async (UsersContext usersContext, LoginInputModel loginInputModel) =>
+{
     var user = await usersContext.Users.Where(user => user.UserName == loginInputModel.UserName && user.Password == loginInputModel.Password).FirstOrDefaultAsync();
 
     if (user == null)
