@@ -25,18 +25,45 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+bool authenticated = false;
+
+app.MapPost("/login", async (UsersContext usersContext, LoginInputModel loginInputModel) => {
+    var user = await usersContext.Users.Where(user => user.UserName == loginInputModel.UserName && user.Password == loginInputModel.Password).FirstOrDefaultAsync();
+
+    if (user == null)
+        return Results.Unauthorized();
+
+    authenticated = true;
+
+    return Results.Ok();
+});
+
 app.MapGet("/users", async (UsersContext usersContext) =>
 {
-    return await usersContext.Users.ToListAsync();
+    if (!authenticated)
+        return Results.Unauthorized();
+
+    return Results.Json(await usersContext.Users.ToListAsync());
 });
 
 app.MapGet("/users/{id}", async (UsersContext usersContext, string id) =>
 {
-    return await usersContext.Users.Where(user => user.Id == id).ToListAsync();
+    if (!authenticated)
+        return Results.Unauthorized();
+
+    return Results.Json(await usersContext.Users.Where(user => user.Id == id).ToListAsync());
 });
 
 app.MapPost("/users", async (UsersContext usersContext, UserInputModel userInputModel) =>
 {
+    var usersCount = usersContext.Users.Count();
+
+    if (usersCount > 0)
+    {
+        if (!authenticated)
+            return Results.Unauthorized();
+    }
+
     var newUser = UserFactory.DefaultFactory(userInputModel);
 
     await usersContext.Users.AddAsync(newUser);
@@ -48,6 +75,9 @@ app.MapPost("/users", async (UsersContext usersContext, UserInputModel userInput
 
 app.MapPut("/users/{id}", async (UsersContext usersContext, UserInputModel userInputModel, string id) =>
 {
+    if (!authenticated)
+        return Results.Unauthorized();
+
     var user = await usersContext.Users.FindAsync(id);
 
     if (user == null)
@@ -69,6 +99,9 @@ app.MapPut("/users/{id}", async (UsersContext usersContext, UserInputModel userI
 
 app.MapDelete("/users/{id}", async (UsersContext usersContext, string id) =>
 {
+    if (!authenticated)
+        return Results.Unauthorized();
+
     var user = await usersContext.Users.FindAsync(id);
 
     if (user == null)
